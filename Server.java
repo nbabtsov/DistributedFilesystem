@@ -71,13 +71,13 @@ public class Server {
                         System.out.println("File sent!");
                     }
                     else {
+                        //Potential TODO: propagate file to all backups if doesn't exist there?
                         System.out.println("Something went wrong with sending the file, trying backups");
                         for(Integer p:ports)
                         {
                             Socket socket2 = new Socket("127.0.0.1", p);
                             DataInputStream in2 = new DataInputStream(new BufferedInputStream(socket2.getInputStream()));
                             DataOutputStream out2 =  new DataOutputStream(socket2.getOutputStream());
-                            // try{
                             out2.writeUTF("OPEN " + name);
                             String res = in2.readUTF();
                             if(res.contains("FILE_EXISTS")) {
@@ -114,8 +114,26 @@ public class Server {
                     //update ("send?") file and propagate updates to all files in backups
                     //or "append"? use as separate command?
                 }
-                if (line.split("\\s+")[0].equals("REMOVE")){ //client updates file
+                if (line.split("\\s+")[0].equals("REMOVE")){ //NOT DONE
                     //remove file and propagate remove to all files in backups
+                    String name = line.split("\\s+")[1];
+                    File file = new File(name);
+                    if(file.exists()){
+                        file.delete();
+                        System.out.println("File "+ name + " deleted from primary");
+                        for(Integer p:ports) {
+                            Socket socket2 = new Socket("127.0.0.1", p);
+                            DataInputStream in2 = new DataInputStream(new BufferedInputStream(socket2.getInputStream()));
+                            DataOutputStream out2 = new DataOutputStream(socket2.getOutputStream());
+                            out2.writeUTF("REMOVE " + name);
+                            String res = in2.readUTF();
+                            if(res.contains("FILE_DELETED")){
+                                //TODO: verify response? -- # of deletions matches number of ports connected?
+                            }
+                        }
+                        System.out.println("File " + name + " deleted from all backups");
+
+                    }
                 }
 
 
@@ -224,7 +242,16 @@ public class Server {
                     //run update method? (again?)
                 }
                 else if(line.split("\\s+")[0].equals("REMOVE")){
-                    //run remove method? (again?) -- check if file exists
+                    String name = line.split("\\s+")[1];
+                    File file = new File(name);
+                    if(file.exists()){
+                        out.writeUTF("FILE_DELETED " + name  );
+                        file.delete();
+                    }
+                    else{
+                        out.writeUTF("NO_SUCH_FILE " + name  );
+
+                    }
                 }
                 else
                 {
