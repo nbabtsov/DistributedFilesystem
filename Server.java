@@ -121,18 +121,23 @@ public class Server {
                     if(file.exists()){
                         file.delete();
                         System.out.println("File "+ name + " deleted from primary");
+                       // int del_count = 0;
                         for(Integer p:ports) {
                             Socket socket2 = new Socket("127.0.0.1", p);
                             DataInputStream in2 = new DataInputStream(new BufferedInputStream(socket2.getInputStream()));
                             DataOutputStream out2 = new DataOutputStream(socket2.getOutputStream());
                             out2.writeUTF("REMOVE " + name);
                             String res = in2.readUTF();
-                            if(res.contains("FILE_DELETED")){
-                                //TODO: verify response? -- # of deletions matches number of ports connected?
-                            }
+                           // if(res.contains("FILE_DELETED")){
+                           // }
                         }
                         System.out.println("File " + name + " deleted from all backups");
+                        out.writeUTF("FILE_DELETED");
 
+                    }
+                    else{
+                        out.writeUTF("NO_SUCH_FILE");
+                        System.out.println("No such file to remove");
                     }
                 }
 
@@ -144,7 +149,7 @@ public class Server {
             }
             catch (IOException e) {
                 //e.printStackTrace();
-                System.out.println("Client disconnected");
+                System.out.println("Something went wrong");
             }
         }
     }
@@ -164,7 +169,7 @@ public class Server {
                     out.write(buffer, 0, count);
                 }
                 file.close();
-                System.out.println("Done!");
+                System.out.println("File sent to client");
             }
             else{
                 return false;
@@ -188,15 +193,8 @@ public class Server {
                 out.write(buffer, 0, count);
             }
 
-            try (BufferedReader br = new BufferedReader(new FileReader(name))) {
-                String line;
-                while ((line = br.readLine()) != null) {
-                    System.out.println(line);
-                }
-            }
-
             file.close();
-            System.out.println("Done!");
+            System.out.println("File sent to primary");
         }
         catch(Exception e){
             e.printStackTrace();
@@ -245,8 +243,8 @@ public class Server {
                     String name = line.split("\\s+")[1];
                     File file = new File(name);
                     if(file.exists()){
-                        out.writeUTF("FILE_DELETED " + name  );
                         file.delete();
+                        out.writeUTF("FILE_DELETED " + name  );
                     }
                     else{
                         out.writeUTF("NO_SUCH_FILE " + name  );
