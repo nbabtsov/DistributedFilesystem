@@ -1,3 +1,4 @@
+import javax.xml.crypto.Data;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -7,40 +8,37 @@ import java.util.ArrayList;
 public class Server {
     private static ArrayList<Integer> ports = new ArrayList<Integer>();
 
-    public static void main(String[] args){
-        if (args.length < 1){ //no args
+    public static void main(String[] args) {
+        if (args.length < 1) { //no args
             System.out.println("must enter one port number to run primary server");
-        }
-        else if (args.length == 1)//start primary
+        } else if (args.length == 1)//start primary
         {
             startPrimaryServer(args[0]);//start backup
-        }
-        else if (args.length == 2){
+        } else if (args.length == 2) {
             startBackupServer(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
-        }
-        else{
+        } else {
             System.out.println("Wrong input");
         }
 
 
     }
-    public static void startPrimaryServer(String port){
+
+    public static void startPrimaryServer(String port) {
         System.out.println("Primary Server started");
         int p_port = Integer.parseInt(port);
 
-        try(ServerSocket server = new ServerSocket(p_port)){
+        try (ServerSocket server = new ServerSocket(p_port)) {
             System.out.println("Waiting for a client ...");
 
-        while(true){
+            while (true) {
 
-            Socket socket = server.accept();
-            ClientHandler clientSock = new ClientHandler(socket);
-            new Thread(clientSock).start();
+                Socket socket = server.accept();
+                ClientHandler clientSock = new ClientHandler(socket);
+                new Thread(clientSock).start();
 
-        }
+            }
 
-        }
-        catch(Exception ex){
+        } catch (Exception ex) {
             System.out.println("Server exception: " + ex.getMessage());
             ex.printStackTrace();
         }
@@ -50,17 +48,15 @@ public class Server {
         private final Socket clientSocket;
 
         // Constructor
-        public ClientHandler(Socket socket)
-        {
+        public ClientHandler(Socket socket) {
             this.clientSocket = socket;
         }
 
-        public void run()
-        {
+        public void run() {
 
             try {
                 DataInputStream in = new DataInputStream(new BufferedInputStream(clientSocket.getInputStream()));
-                DataOutputStream out =  new DataOutputStream(clientSocket.getOutputStream());
+                DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
                 String line = in.readUTF();
                 System.out.println("Got message: " + line);
                 if (line.split("\\s+")[0].equals("OPEN")) {
@@ -69,18 +65,15 @@ public class Server {
                     boolean filesent = sendFile(name, out);
                     if (filesent) {
                         System.out.println("File sent!");
-                    }
-                    else {
-                        //Potential TODO: propagate file to all backups if doesn't exist there?
+                    } else {
                         System.out.println("Something went wrong with sending the file, trying backups");
-                        for(Integer p:ports)
-                        {
+                        for (Integer p : ports) {
                             Socket socket2 = new Socket("127.0.0.1", p);
                             DataInputStream in2 = new DataInputStream(new BufferedInputStream(socket2.getInputStream()));
-                            DataOutputStream out2 =  new DataOutputStream(socket2.getOutputStream());
+                            DataOutputStream out2 = new DataOutputStream(socket2.getOutputStream());
                             out2.writeUTF("OPEN " + name);
                             String res = in2.readUTF();
-                            if(res.contains("FILE_EXISTS")) {
+                            if (res.contains("FILE_EXISTS")) {
                                 int c;
                                 File f = new File(name);
                                 DataOutputStream file2 = new DataOutputStream(new FileOutputStream(f));
@@ -99,43 +92,46 @@ public class Server {
 
                             }
                         }
-                        if (!filesent){
+                        if (!filesent) {
                             System.out.println("all backups unsuccessful");
                         }
-                  }
+                    }
                 }
-                if (line.split("\\s+")[0].contains("JOIN")){
+                if (line.split("\\s+")[0].contains("JOIN")) {
                     String backup_port = line.split("\\s+")[1];
                     ports.add(Integer.parseInt(backup_port));
                     out.writeUTF("COMPLETE_JOIN");
                     System.out.println("Just had backup server join on port " + backup_port);
                 }
-                if (line.split("\\s+")[0].equals("UPDATE")){ //client updates file
-                    //update ("send?") file and propagate updates to all files in backups
-                    //or "append"? use as separate command?
+                if (line.split("\\s+")[0].equals("ADD")) {
+                    System.out.println("Attemtping to recieve file...");
+                    String name = line.split("\\s+")[1];
+                    boolean filesent = receiveFile(name, out, in, ports);
+                    if (filesent) {
+                        System.out.println("File received!");
+                    }
                 }
-                if (line.split("\\s+")[0].equals("REMOVE")){ //NOT DONE
+                if (line.split("\\s+")[0].equals("REMOVE")) { //NOT DONE
                     //remove file and propagate remove to all files in backups
                     String name = line.split("\\s+")[1];
                     File file = new File(name);
-                    if(file.exists()){
+                    if (file.exists()) {
                         file.delete();
-                        System.out.println("File "+ name + " deleted from primary");
-                       // int del_count = 0;
-                        for(Integer p:ports) {
+                        System.out.println("File " + name + " deleted from primary");
+                        // int del_count = 0;
+                        for (Integer p : ports) {
                             Socket socket2 = new Socket("127.0.0.1", p);
                             DataInputStream in2 = new DataInputStream(new BufferedInputStream(socket2.getInputStream()));
                             DataOutputStream out2 = new DataOutputStream(socket2.getOutputStream());
                             out2.writeUTF("REMOVE " + name);
                             String res = in2.readUTF();
-                           // if(res.contains("FILE_DELETED")){
-                           // }
+                            // if(res.contains("FILE_DELETED")){
+                            // }
                         }
                         System.out.println("File " + name + " deleted from all backups");
                         out.writeUTF("FILE_DELETED");
 
-                    }
-                    else{
+                    } else {
                         out.writeUTF("NO_SUCH_FILE");
                         System.out.println("No such file to remove");
                     }
@@ -146,14 +142,60 @@ public class Server {
                 in.close();
                 out.close();
                 clientSocket.close();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 //e.printStackTrace();
                 System.out.println("Something went wrong");
             }
         }
     }
 
+
+    public static synchronized boolean receiveFile(String name, DataOutputStream out, DataInputStream in, ArrayList<Integer> ports) {
+        try {
+            System.out.println(name);
+            int count;
+            byte[] buffer = new byte[8192]; // or 4096, or more
+
+            File fileSource = new File(name);
+            DataOutputStream file = new DataOutputStream(new FileOutputStream(fileSource));
+            out.writeUTF("READY");
+            while ((count = in.read(buffer)) > 0) {
+                file.write(buffer, 0, count);
+            }
+            System.out.println("File " + name + " downloaded!");
+            file.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        try {
+            for (Integer p : ports) {
+                Socket socket2 = new Socket("127.0.0.1", p);
+                DataInputStream in2 = new DataInputStream(new BufferedInputStream(socket2.getInputStream()));
+                DataOutputStream out2 = new DataOutputStream(socket2.getOutputStream());
+                out2.writeUTF("ADD " + name);
+                File fileSource = new File(name);
+                DataInputStream file = new DataInputStream(new FileInputStream(fileSource));
+                String res = in2.readUTF();
+                if (res.contains("READY")) {
+                    int c;
+                    byte[] b = new byte[8192]; // or 4096, or more
+                    while ((c = file.read(b)) > 0) {
+                        out2.write(b, 0, c);
+                    }
+                    file.close();
+                    socket2.close();
+                    in2.close();
+                    out2.close();
+                }
+            }
+        } catch (Exception e)
+        {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
 
     public static synchronized boolean sendFile(String name, DataOutputStream out) {
         try {
@@ -162,7 +204,7 @@ public class Server {
             byte[] buffer = new byte[8192]; // or 4096, or more
 
             File fileSource = new File(name);
-            if(fileSource.exists()){
+            if (fileSource.exists()) {
                 out.writeUTF("FILE_EXISTS");
                 FileInputStream file = new FileInputStream(fileSource);
                 while ((count = file.read(buffer)) > 0) {
@@ -170,8 +212,7 @@ public class Server {
                 }
                 file.close();
                 System.out.println("File sent to client");
-            }
-            else{
+            } else {
                 return false;
             }
 
@@ -182,7 +223,8 @@ public class Server {
         }
         return true;
     }
-    public static synchronized boolean  sendFileBackup(String name, DataOutputStream out){
+
+    public static synchronized boolean sendFileBackup(String name, DataOutputStream out) {
         try {
             System.out.println(name);
             int count;
@@ -195,64 +237,81 @@ public class Server {
 
             file.close();
             System.out.println("File sent to primary");
-        }
-        catch(Exception e){
+        } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
         return true;
     }
+
+    public static synchronized boolean receiveFileBackup(String name, DataOutputStream out, DataInputStream in) {
+        try {
+            System.out.println(name);
+            int count;
+            byte[] buffer = new byte[8192]; // or 4096, or more
+
+            File fileSource = new File(name);
+            DataOutputStream file = new DataOutputStream(new FileOutputStream(fileSource));
+            out.writeUTF("READY");
+            while ((count = in.read(buffer)) > 0) {
+                file.write(buffer, 0, count);
+            }
+            System.out.println("File " + name + " downloaded!");
+            file.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
     public static class ClientHandlerBackup implements Runnable {
         private final Socket clientSocket;
         private final int pport;
 
         // Constructor
-        public ClientHandlerBackup(Socket socket, int pport)
-        {
+        public ClientHandlerBackup(Socket socket, int pport) {
             this.clientSocket = socket;
             this.pport = pport;
         }
 
-        public void run()
-        {
+        public void run() {
 
             try {
                 DataInputStream in = new DataInputStream(new BufferedInputStream(clientSocket.getInputStream()));
-                DataOutputStream out =  new DataOutputStream(clientSocket.getOutputStream());
+                DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
                 String line = in.readUTF();
                 System.out.println("Backup got message: " + line);
                 if (line.split("\\s+")[0].contains("OPEN")) {
                     File fileSource = new File(line.split("\\s+")[1]);
-                    if(fileSource.exists()){
+                    if (fileSource.exists()) {
                         out.writeUTF("FILE_EXISTS");
                         sendFileBackup(line.split("\\s+")[1], out);
                         out.flush();
                         in.close();
                         out.close();
-                        clientSocket.close();;
-                    }
-                    else{
+                        clientSocket.close();
+                        ;
+                    } else {
                         out.writeUTF("NO_SUCH_FILE");
 
                     }
-                }
-                else if (line.split("\\s+")[0].equals("UPDATE")) {
-                    //run update method? (again?)
-                }
-                else if(line.split("\\s+")[0].equals("REMOVE")){
+                } else if (line.split("\\s+")[0].equals("ADD")) {
+                    receiveFileBackup(line.split("\\s+")[1], out,in);
+                    System.out.println("File Received");
+                    in.close();
+                    out.close();
+                } else if (line.split("\\s+")[0].equals("REMOVE")) {
                     String name = line.split("\\s+")[1];
                     File file = new File(name);
-                    if(file.exists()){
+                    if (file.exists()) {
                         file.delete();
-                        out.writeUTF("FILE_DELETED " + name  );
-                    }
-                    else{
-                        out.writeUTF("NO_SUCH_FILE " + name  );
+                        out.writeUTF("FILE_DELETED " + name);
+                    } else {
+                        out.writeUTF("NO_SUCH_FILE " + name);
 
                     }
-                }
-                else
-                {
+                } else {
                     out.writeUTF("command unrecognized");
                 }
 
@@ -260,18 +319,15 @@ public class Server {
                 in.close();
                 out.close();
                 clientSocket.close();
-            }
-            catch (IOException e) {
+            } catch (IOException e) {
                 e.printStackTrace();
             }
         }
     }
 
-    public static void startBackupServer(int secondaryPort, int primaryPort)
-    {
-        String response = oneTimeCommunicate(primaryPort, "JOIN "+secondaryPort); //request to join primary server
-        if(response.contains("COMPLETE_JOIN"))
-        {
+    public static void startBackupServer(int secondaryPort, int primaryPort) {
+        String response = oneTimeCommunicate(primaryPort, "JOIN " + secondaryPort); //request to join primary server
+        if (response.contains("COMPLETE_JOIN")) {
 
             try (ServerSocket serverSocket = new ServerSocket(secondaryPort)) {
                 System.out.println("Backup with port " + secondaryPort + " is up and listening for primary");
@@ -290,26 +346,24 @@ public class Server {
                 ex.printStackTrace();
             }
 
-        }
-        else {
+        } else {
             System.out.println("Something went wrong");
         }
 
     }
 
 
-
     //for handling communication between the primary and backup servers, acts like "client" code
     public static String oneTimeCommunicate(int port, String message) {
-        Socket socket=null;
+        Socket socket = null;
         try {
             socket = new Socket("127.0.0.1", port);
             DataInputStream in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
-            DataOutputStream out =  new DataOutputStream(socket.getOutputStream());
+            DataOutputStream out = new DataOutputStream(socket.getOutputStream());
 
             out.writeUTF(message);
 
-           System.out.println("Just send out: " + message + " to port: " + port);
+            System.out.println("Just send out: " + message + " to port: " + port);
 
             //get response
             String line = in.readUTF();
