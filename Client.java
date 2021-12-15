@@ -28,6 +28,9 @@ public class Client {
                 else if(line.split("\\s+")[0].equals("REMOVE")){
                     remove(line, out, in);
                 }
+                else if(line.split("\\s+")[0].equals("ADD")){
+                    add(line, out, in);
+                }
                 else {
                     out.writeUTF(line);
                     line = in.readUTF();
@@ -51,21 +54,21 @@ public class Client {
         }
     }
 
-    public static boolean retrieve(String line, DataOutputStream out, DataInputStream in) { //need to add check if file doesn't exist
+    public static boolean add(String line, DataOutputStream out, DataInputStream in) { //need to add check if file doesn't exist
         try {
             out.writeUTF(line);
             String response = in.readUTF();
-            if(response.contains("FILE_EXISTS")){
+            if(response.contains("READY")){
 
-            int count;
-            File fileSource = new File(line.split("\\s+")[1]);
-            DataOutputStream file = new DataOutputStream(new FileOutputStream(fileSource));
-            byte[] buffer = new byte[8192]; // or 4096, or more
-            while ((count = in.read(buffer)) > 0) {
-                file.write(buffer, 0, count);
-            }
-            System.out.println("File " + line.split("\\s+")[1] +" downloaded!");
-            file.close();
+                int count;
+                File fileSource = new File(line.split("\\s+")[1]);
+                byte[] buffer = new byte[8192]; // or 4096, or more
+                FileInputStream file = new FileInputStream(fileSource);
+                while ((count = file.read(buffer)) > 0) {
+                    out.write(buffer, 0, count);
+                }
+                file.close();
+                System.out.println("File sent to server");
             }
             else {
                 System.out.println("File does not exist");
@@ -76,6 +79,33 @@ public class Client {
         }
         return true;
     }
+
+    public static boolean retrieve(String line, DataOutputStream out, DataInputStream in) { //need to add check if file doesn't exist
+        try {
+            out.writeUTF(line);
+            String response = in.readUTF();
+            if(response.contains("FILE_EXISTS")){
+
+                int count;
+                File fileSource = new File(line.split("\\s+")[1]);
+                DataOutputStream file = new DataOutputStream(new FileOutputStream(fileSource));
+                byte[] buffer = new byte[8192]; // or 4096, or more
+                while ((count = in.read(buffer)) > 0) {
+                    file.write(buffer, 0, count);
+                }
+                System.out.println("File " + line.split("\\s+")[1] +" downloaded!");
+                file.close();
+            }
+            else {
+                System.out.println("File does not exist");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+        return true;
+    }
+
     public static boolean remove(String line, DataOutputStream out, DataInputStream in){
         File file = new File(line.split("\\s+")[1]);
         if(file.exists()){
