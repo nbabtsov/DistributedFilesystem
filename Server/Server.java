@@ -1,4 +1,3 @@
-import javax.xml.crypto.Data;
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -19,8 +18,6 @@ public class Server {
         } else {
             System.out.println("Wrong input");
         }
-
-
     }
 
     public static void startPrimaryServer(String port) {
@@ -46,10 +43,16 @@ public class Server {
 
     private static class ClientHandler implements Runnable {
         private final Socket clientSocket;
+        private PasswordManager passwordManager;
 
         // Constructor
         public ClientHandler(Socket socket) {
             this.clientSocket = socket;
+            try {
+                passwordManager = new PasswordManager();
+            } catch (FileNotFoundException e) {
+                e.printStackTrace();
+            }
         }
 
         public void run() {
@@ -59,6 +62,19 @@ public class Server {
                 DataOutputStream out = new DataOutputStream(clientSocket.getOutputStream());
                 String line = in.readUTF();
                 System.out.println("Got message: " + line);
+                if (line.split("\\s+")[0].equals("TEST")) {
+                    String username = line.split("\\s+")[1];
+                    String password = line.split("\\s+")[2];
+                    if (passwordManager.authenticate(username,password))
+                    {
+                        out.writeUTF("ACCEPT");
+                    }
+                    else
+                    {
+                        out.writeUTF("REJECT");
+                        return;
+                    }
+                }
                 if (line.split("\\s+")[0].equals("OPEN")) {
                     System.out.println("Attemtping to sending file...");
                     String name = line.split("\\s+")[1];
@@ -97,12 +113,6 @@ public class Server {
                         }
                     }
                 }
-                if (line.split("\\s+")[0].contains("JOIN")) {
-                    String backup_port = line.split("\\s+")[1];
-                    ports.add(Integer.parseInt(backup_port));
-                    out.writeUTF("COMPLETE_JOIN");
-                    System.out.println("Just had backup server join on port " + backup_port);
-                }
                 if (line.split("\\s+")[0].equals("ADD")) {
                     System.out.println("Attemtping to recieve file...");
                     String name = line.split("\\s+")[1];
@@ -136,8 +146,12 @@ public class Server {
                         System.out.println("No such file to remove");
                     }
                 }
-
-
+                if (line.split("\\s+")[0].contains("JOIN")) {
+                    String backup_port = line.split("\\s+")[1];
+                    ports.add(Integer.parseInt(backup_port));
+                    out.writeUTF("COMPLETE_JOIN");
+                    System.out.println("Just had backup server join on port " + backup_port);
+                }
                 out.flush();
                 in.close();
                 out.close();
@@ -148,7 +162,6 @@ public class Server {
             }
         }
     }
-
 
     public static synchronized boolean receiveFile(String name, DataOutputStream out, DataInputStream in, ArrayList<Integer> ports) {
         try {
