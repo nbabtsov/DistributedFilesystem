@@ -22,7 +22,7 @@ A new backup server may connect to the primary server at any time.
 
 To compile, run `javac *.java` in every subdirectory. For example:
 ```
-cd DistributedFileSystem/Server
+cd distributed_filesystem/Server
 javac *.java
 ```
 
@@ -31,7 +31,7 @@ Note: Because everything is designed to run on `localhost`, differnet folders mu
 
 Firstly, run the primary server with a chosen port:
 ```
-nikababtsov@LAPTOP-VGHR5LTP:/mnt/c/Users/Nika/DistributedFilesystem/Server$ java Server 5000
+nikababtsov@LAPTOP-VGHR5LTP:/mnt/c/Users/Nika/distributed_filesystem/Server$ java Server 5000
 Primary Server started
 Waiting for a client ...
 ```
@@ -42,7 +42,7 @@ Then, run the backup server from Backup1, choosing a different port and specifyi
 
 
 ```
-nikababtsov@LAPTOP-VGHR5LTP:/mnt/c/Users/Nika/DistributedFilesystem/Backup1$ java Server 5001 5000
+nikababtsov@LAPTOP-VGHR5LTP:/mnt/c/Users/Nika/distributed_filesystem/Backup1$ java Server 5001 5000
 Just send out: JOIN 5001 to port: 5000
 Got response: COMPLETE_JOIN
 Backup with port 5001 is up and listening for primary
@@ -56,7 +56,7 @@ Just had backup server join on port 5001
 
 Then, connect to the primary server as a client: 
 ```
-nikababtsov@LAPTOP-VGHR5LTP:/mnt/c/Users/Nika/DistributedFilesystem/Client$ java Client 5000
+nikababtsov@LAPTOP-VGHR5LTP:/mnt/c/Users/Nika/distributed_filesystem/Client$ java Client 5000
 Enter username: 
 admin
 Enter password: 
@@ -92,14 +92,14 @@ File exampleClientFile.txt downloaded!
 File Received
 ```
 
-`exampleClientFile.txt` should appear under `DistributedFilesystem/Backup1/` and `DistributedFilesystem/Server/`
+`exampleClientFile.txt` should appear under `distributed_filesystem/Backup1/` and `distributed_filesystem/Server/`
 
 ### download a file from primary or backup servers: 
 ```
 OPEN exampleServerFile.txt
 File exampleServerFile.txt downloaded!
 ```
-and `exampleServerFile.txt` should appear under  `DistributedFilesystem/Client/`
+and `exampleServerFile.txt` should appear under  `distributed_filesystem/Client/`
 
 Primary server should say:
 ```
@@ -127,14 +127,14 @@ backup server should say:
 ```
 Backup got message: REMOVE exampleClientFile.txt
 ```
-`exampleClientFile.txt` should disappear from under `DistributedFilesystem/Server/`, `DistributedFilesystem/Backup1/`, and  `DistributedFilesystem/Client/`
+`exampleClientFile.txt` should disappear from under `distributed_filesystem/Server/`, `distributed_filesystem/Backup1/`, and  `distributed_filesystem/Client/`
 
 ## Adding New Users 
-Usernames are stored in a plain textfile `DistributedFilesystem/Server/users.txt`, passwords are hashed and stored in `DistributedFilesystem/Server/security.txt`
+Usernames are stored in a plain textfile `distributed_filesystem/Server/users.txt`, passwords are hashed and stored in `distributed_filesystem/Server/security.txt`
 
 To add a new user, run: 
 ```
-nikababtsov@LAPTOP-VGHR5LTP:/mnt/c/Users/Nika/DistributedFilesystem/Server$ java AddUser coms454
+nikababtsov@LAPTOP-VGHR5LTP:/mnt/c/Users/Nika/distributed_filesystem/Server$ java AddUser coms454
 New username:
 newuser123 
 Password:
