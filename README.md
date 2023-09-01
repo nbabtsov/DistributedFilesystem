@@ -8,7 +8,7 @@ Upon connecting to a primary server, a client is allowed 3 basic operations:
 * REMOVE - delete file from requesting client, primary server, and backup servers.
 
 A client may also connect to a backup server, but its changes will not be persisted to the primary server and other backup servers.
-A client must log in with an existing username and password. For the purposes of this documentation, username `admin` and password `coms454` is used. `admin` may create new username and passwords. Usernames are stored in a plain textfile, passwords are hashed. 
+A client must log in with an existing username and password. For the purposes of this documentation, username `admin` and password `coms454` is used. `admin` may create new username and passwords. See "Adding New Users" under "Running Instructions". 
 
 There is no limit set on the number of client connections to servers.
 
@@ -128,3 +128,19 @@ backup server should say:
 Backup got message: REMOVE exampleClientFile.txt
 ```
 `exampleClientFile.txt` should disappear from under `DistributedFilesystem/Server/`, `DistributedFilesystem/Backup1/`, and  `DistributedFilesystem/Client/`
+
+## Adding New Users 
+Usernames are stored in a plain textfile `DistributedFilesystem/Server/users.txt`, passwords are hashed and stored in `DistributedFilesystem/Server/security.txt`
+
+To add a new user, run: 
+```
+nikababtsov@LAPTOP-VGHR5LTP:/mnt/c/Users/Nika/DistributedFilesystem/Server$ java AddUser coms454
+New username:
+newuser123 
+Password:
+newuserpass
+Confirm Password
+newuserpass
+Added
+```
+The `users.txt` and `security.txt` will be updated accordingly, and these user credentials may now be used to log in for client connections
