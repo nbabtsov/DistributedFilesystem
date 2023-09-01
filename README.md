@@ -1,9 +1,9 @@
 # Distributed Filesystem
-A program designed to emulate a distributed filesystem on a local machine, supporting multiple client connections to primary server, with persistence to backup servers. Because everything is designed to run on `localhost`, differnet folders must be used for each client and server instance in order to demonstrate full functionality. 
+A program designed to emulate a distributed filesystem, supporting multiple client connections to primary server, with persistence to backup servers. 
 
 ## Client
 Upon connecting to a primary server, a client is allowed 3 basic operations:
-* OPEN - download file from server to requesting client. If the file does not exit in primary server, primary server requests file from backup servers, if it exists. 
+* OPEN - download file from server to requesting client. If the file does not exit in primary server, primary server requests file from backup servers if it exits. Upon success, primary server will copy file from backup to primary, and send it to the requesting client. 
 * ADD - upload file from requesting client to primary server and all backup servers. 
 * REMOVE - delete file from requesting client, primary server, and backup servers.
 
@@ -19,13 +19,15 @@ A new backup server may connect to the primary server at any time.
 
 ## Running Instructions
 
+
 To compile, run `javac *.java` in every subdirectory. For example:
 ```
 cd DistributedFileSystem/Server
 javac *.java
 ```
 
-To Run: 
+### Setting up Connections
+Note: Because everything is designed to run on `localhost`, differnet folders must be used for each client and server instance in order to demonstrate full functionality. Hence, this repository contains a `Server` fold for primary server, `Client` for client connection, and `Backup1` and `Backup2` for the backupservers. 
 
 Firstly, run the primary server with a chosen port:
 ```
@@ -50,7 +52,7 @@ Primary server should say:
 ```
 Got message: JOIN 5001
 Just had backup server join on port 5001
-``` 
+```
 
 Then, connect to the primary server as a client: 
 ```
@@ -64,4 +66,65 @@ Type OPEN <filename> to retrieve file, ADD <filename> to add new file, REMOVE <f
 >
 ```
 
+Primary server should say: 
+`Got message: TEST admin coms454`
 
+### Client Operations 
+#### upload a file to primary and backup servers 
+```
+>ADD exampleClientFile.txt
+File sent to server
+```
+Primary server should say: 
+```
+Got message: ADD exampleClientFile.txt
+Attemtping to recieve file...
+exampleClientFile.txt
+File exampleClientFile.txt downloaded!
+File received!
+```
+
+Backup server should say: 
+```
+Backup got message: ADD exampleClientFile.txt
+exampleClientFile.txt
+File exampleClientFile.txt downloaded!
+File Received
+```
+
+`exampleClientFile.txt` should appear under `DistributedFilesystem/Backup1/` and `DistributedFilesystem/Server/`
+
+### download a file from primary or backup servers: 
+```
+OPEN exampleServerFile.txt
+File exampleServerFile.txt downloaded!
+```
+and `exampleServerFile.txt` should appear under  `DistributedFilesystem/Client/`
+
+Primary server should say:
+```
+Got message: OPEN exampleServerFile.txt
+Attemtping to sending file...
+exampleServerFile.txt
+File sent to client
+File sent!
+```
+
+### remove a file from primary and backup servers 
+```
+>REMOVE exampleClientFile.txt
+File exampleClientFile.txt removed locally
+File exampleClientFile.txt deleted from primary and backups successfully
+```
+
+primary server should say: 
+```
+Got message: REMOVE exampleClientFile.txt
+File exampleClientFile.txt deleted from primary
+File exampleClientFile.txt deleted from all backups
+```
+backup server should say: 
+```
+Backup got message: REMOVE exampleClientFile.txt
+```
+`exampleClientFile.txt` should disappear from under `DistributedFilesystem/Server/`, `DistributedFilesystem/Backup1/`, and  `DistributedFilesystem/Client/`
