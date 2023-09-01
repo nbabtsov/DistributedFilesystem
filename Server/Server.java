@@ -12,8 +12,8 @@ public class Server {
             System.out.println("must enter one port number to run primary server");
         } else if (args.length == 1)//start primary
         {
-            startPrimaryServer(args[0]);//start backup
-        } else if (args.length == 2) {
+            startPrimaryServer(args[0]);
+        } else if (args.length == 2) { //start backup
             startBackupServer(Integer.parseInt(args[0]), Integer.parseInt(args[1]));
         } else {
             System.out.println("Wrong input");
@@ -121,22 +121,20 @@ public class Server {
                         System.out.println("File received!");
                     }
                 }
-                if (line.split("\\s+")[0].equals("REMOVE")) { //NOT DONE
+                if (line.split("\\s+")[0].equals("REMOVE")) { 
                     //remove file and propagate remove to all files in backups
                     String name = line.split("\\s+")[1];
                     File file = new File(name);
                     if (file.exists()) {
                         file.delete();
                         System.out.println("File " + name + " deleted from primary");
-                        // int del_count = 0;
                         for (Integer p : ports) {
                             Socket socket2 = new Socket("127.0.0.1", p);
                             DataInputStream in2 = new DataInputStream(new BufferedInputStream(socket2.getInputStream()));
                             DataOutputStream out2 = new DataOutputStream(socket2.getOutputStream());
                             out2.writeUTF("REMOVE " + name);
                             String res = in2.readUTF();
-                            // if(res.contains("FILE_DELETED")){
-                            // }
+
                         }
                         System.out.println("File " + name + " deleted from all backups");
                         out.writeUTF("FILE_DELETED");
