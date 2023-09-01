@@ -8,7 +8,7 @@ Upon connecting to a primary server, a client is allowed 3 basic operations:
 * REMOVE - delete file from requesting client, primary server, and backup servers.
 
 A client may also connect to a backup server, but its changes will not be persisted to the primary server and other backup servers.
-A client must log in with an existing username and password. For the purposes of this documentation, username `admin` and password `coms454` is used. `admin` may create new username and passwords. See "Adding New Users" under "Running Instructions". 
+A client must log in with an existing username and password. For the purposes of this documentation, username `admin` and password `coms454` is used. `admin` may create new username and passwords. See ["Adding New Users"](https://github.com/nbabtsov/DistributedFilesystem/blob/main/README.md#adding-new-users) under "Running Instructions". 
 
 There is no limit set on the number of client connections to servers.
 
