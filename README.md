@@ -27,7 +27,7 @@ javac *.java
 ```
 
 ### Setting up Connections
-Note: Because everything is designed to run on `localhost`, differnet folders must be used for each client and server instance in order to demonstrate full functionality. Hence, this repository contains a `Server` fold for primary server, `Client` for client connection, and `Backup1` and `Backup2` for the backupservers. 
+Note: Because everything is designed to run on `localhost`, differnet folders must be used for each client and server instance in order to demonstrate full functionality. Hence, this repository contains a `Server` folder for primary server, `Client` for client connection, and `Backup1` and `Backup2` for the backupservers. 
 
 Firstly, run the primary server with a chosen port:
 ```
