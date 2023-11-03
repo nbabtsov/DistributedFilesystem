@@ -1,4 +1,4 @@
-# Distributed Filesystem
+# Distributed Filesystem (ISU CS454 - Distributed Systems, 2021)
 A program designed to emulate a distributed filesystem, supporting multiple client connections to primary server, with persistence to backup servers. 
 
 ## Client
